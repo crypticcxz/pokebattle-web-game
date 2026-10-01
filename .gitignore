@@ -1,0 +1,13 @@
+# Large media files (optional to keep local)
+*.mp4
+
+# Python cache & notebooks checkpoints
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

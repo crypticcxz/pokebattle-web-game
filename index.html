@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PokéBattle AI - 3v3 Minimax Battle Simulator</title>
+  <meta name="description" content="A strategic 3v3 Pokémon battle game featuring an AI opponent powered by Minimax with Alpha-Beta Pruning, real-time telemetry, and Obsidian vault export.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="game-header">
+    <div class="logo-group">
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Pokeball" class="logo-icon">
+      <h1 class="logo-title">PokéBattle AI</h1>
+      <span class="ai-badge">Minimax &alpha;&beta;</span>
+    </div>
+
+    <div class="header-controls">
+      <label for="mode-select" class="sr-only" style="display:none;">Game Mode</label>
+      <select id="mode-select" class="mode-selector" title="Select Game Mode">
+        <option value="human-vs-ai">Player vs AI</option>
+        <option value="ai-vs-ai">AI vs AI (Spectator)</option>
+        <option value="human-vs-human">Pass & Play (2P)</option>
+      </select>
+
+      <button id="btn-sound" class="btn-icon" title="Toggle Sound (Mute/Unmute)" aria-label="Toggle Sound">
+        🔊
+      </button>
+
+      <button id="btn-open-inspector" class="btn-icon" title="View AI Thought Process & Telemetry" aria-label="AI Inspector">
+        🧠
+      </button>
+
+      <button id="btn-open-obsidian" class="btn-icon" title="Export Match to Obsidian Vault" aria-label="Obsidian Export">
+        📝
+      </button>
+
+      <button id="btn-restart" class="btn-icon" title="Restart / New Match" aria-label="Restart Match">
+        🔄
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Game Content -->
+  <main class="main-wrapper">
+
+    <!-- 2.5D Battle Arena View -->
+    <section class="battle-arena" id="battle-arena" aria-label="Battle Field">
+      
+      <!-- Opponent (Top Right) -->
+      <div class="battler-slot opponent-slot">
+        <!-- Opponent HUD Card -->
+        <div class="hud-card" id="opponent-hud">
+          <div class="hud-top">
+            <span class="pokemon-name" id="opp-name">Charizard</span>
+            <span class="pokemon-level">Lv. 50</span>
+          </div>
+          <div class="hud-types" id="opp-types">
+            <!-- Dynamic Types -->
+          </div>
+          <div class="hud-hp-bar-container">
+            <span class="hp-label">HP</span>
+            <div class="hp-bar-track">
+              <div class="hp-bar-fill" id="opp-hp-bar" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div class="hud-bottom">
+            <span class="hp-numbers" id="opp-hp-text">78/78</span>
+            <div class="team-balls" id="opp-team-balls">
+              <span class="pokeball-dot"></span>
+              <span class="pokeball-dot"></span>
+              <span class="pokeball-dot"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opponent Pokemon Sprite & Podium -->
+        <div class="pokemon-display">
+          <div class="sprite-container" id="opp-sprite-box">
+            <img src="https://play.pokemonshowdown.com/sprites/ani/charizard.gif" alt="Opponent Pokemon" id="opp-sprite" class="pokemon-sprite">
+          </div>
+          <div class="battle-podium"></div>
+        </div>
+      </div>
+
+      <!-- Player (Bottom Left) -->
+      <div class="battler-slot player-slot">
+        <!-- Player Pokemon Sprite & Podium -->
+        <div class="pokemon-display">
+          <div class="sprite-container" id="player-sprite-box">
+            <img src="https://play.pokemonshowdown.com/sprites/ani-back/blastoise.gif" alt="Player Pokemon" id="player-sprite" class="pokemon-sprite">
+          </div>
+          <div class="battle-podium"></div>
+        </div>
+
+        <!-- Player HUD Card -->
+        <div class="hud-card" id="player-hud">
+          <div class="hud-top">
+            <span class="pokemon-name" id="player-name">Blastoise</span>
+            <span class="pokemon-level">Lv. 50</span>
+          </div>
+          <div class="hud-types" id="player-types">
+            <!-- Dynamic Types -->
+          </div>
+          <div class="hud-hp-bar-container">
+            <span class="hp-label">HP</span>
+            <div class="hp-bar-track">
+              <div class="hp-bar-fill" id="player-hp-bar" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div class="hud-bottom">
+            <span class="hp-numbers" id="player-hp-text">79/79</span>
+            <div class="team-balls" id="player-team-balls">
+              <span class="pokeball-dot"></span>
+              <span class="pokeball-dot"></span>
+              <span class="pokeball-dot"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Battle Dialogue & Narrative Feed -->
+    <section class="dialogue-box" id="dialogue-container" role="region" aria-live="polite">
+      <p class="dialogue-text" id="dialogue-text">Welcome to PokéBattle AI! Choose your move to begin.</p>
+      <span class="turn-tag" id="turn-indicator">Turn 1</span>
+    </section>
+
+    <!-- Controls Panel: Move Grid + Switch Action -->
+    <section class="controls-panel" id="controls-panel">
+      <!-- 4-Move Grid -->
+      <div class="moves-grid" id="moves-container">
+        <!-- Buttons populated dynamically by app.js -->
+        <button class="btn-move" id="move-btn-0">
+          <div class="move-header">
+            <span class="move-name">Hydro Pump</span>
+            <span class="move-type-badge">Water</span>
+          </div>
+          <div class="move-footer">
+            <span class="move-category-icon">🔮 Special</span>
+            <span class="move-pp">5/5 PP</span>
+          </div>
+        </button>
+
+        <button class="btn-move" id="move-btn-1">
+          <div class="move-header">
+            <span class="move-name">Ice Beam</span>
+            <span class="move-type-badge">Ice</span>
+          </div>
+          <div class="move-footer">
+            <span class="move-category-icon">🔮 Special</span>
+            <span class="move-pp">10/10 PP</span>
+          </div>
+        </button>
+
+        <button class="btn-move" id="move-btn-2">
+          <div class="move-header">
+            <span class="move-name">Skull Bash</span>
+            <span class="move-type-badge">Normal</span>
+          </div>
+          <div class="move-footer">
+            <span class="move-category-icon">⚔️ Physical</span>
+            <span class="move-pp">10/10 PP</span>
+          </div>
+        </button>
+
+        <button class="btn-move" id="move-btn-3">
+          <div class="move-header">
+            <span class="move-name">Bite</span>
+            <span class="move-type-badge">Dark</span>
+          </div>
+          <div class="move-footer">
+            <span class="move-category-icon">⚔️ Physical</span>
+            <span class="move-pp">25/25 PP</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- Side Actions -->
+      <div class="side-actions">
+        <button class="btn-action btn-switch" id="btn-switch-team" title="Switch out active Pokémon">
+          🔄 Switch Pokémon
+        </button>
+        <button class="btn-action" id="btn-quick-log" title="View turn-by-turn history">
+          📜 Battle Log
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODALS (<dialog>) ==================== -->
+
+  <!-- Modal 1: Team Switch Bench -->
+  <dialog id="modal-switch" aria-labelledby="switch-title">
+    <div class="modal-header">
+      <h2 id="switch-title" class="modal-title">🔄 Switch Active Pokémon</h2>
+      <button class="btn-close" id="btn-close-switch" aria-label="Close dialog">&times;</button>
+    </div>
+    <div class="switch-team-grid" id="switch-team-list">
+      <!-- Populated dynamically -->
+    </div>
+  </dialog>
+
+  <!-- Modal 2: AI Inspector & Minimax Telemetry -->
+  <dialog id="modal-inspector" aria-labelledby="inspector-title">
+    <div class="modal-header">
+      <h2 id="inspector-title" class="modal-title">🧠 Minimax Decision Telemetry</h2>
+      <button class="btn-close" id="btn-close-inspector" aria-label="Close dialog">&times;</button>
+    </div>
+    
+    <div class="inspector-stats-grid">
+      <div class="stat-box">
+        <div class="stat-value" id="stat-time">0.0 ms</div>
+        <div class="stat-label">Compute Time</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-depth">4</div>
+        <div class="stat-label">Search Depth</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-nodes">0</div>
+        <div class="stat-label">Nodes Evaluated</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-pruned">0</div>
+        <div class="stat-label">&alpha;-&beta; Cutoffs</div>
+      </div>
+    </div>
+
+    <h3 class="inspector-section-title">Candidate Move Heuristic Rankings</h3>
+    <div class="candidates-list" id="candidates-container">
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Play a turn against the AI to view real-time decision branch scores.</p>
+    </div>
+  </dialog>
+
+  <!-- Modal 3: Obsidian Vault Exporter -->
+  <dialog id="modal-obsidian" aria-labelledby="obsidian-title">
+    <div class="modal-header">
+      <h2 id="obsidian-title" class="modal-title">📝 Obsidian Match Exporter</h2>
+      <button class="btn-close" id="btn-close-obsidian" aria-label="Close dialog">&times;</button>
+    </div>
+
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+      This generates an Obsidian-flavored Markdown note formatted with YAML frontmatter, Dataview attributes, and <code>[[wikilinks]]</code> for your vault.
+    </p>
+
+    <div class="obsidian-preview" id="obsidian-markdown-preview"></div>
+
+    <div class="modal-actions">
+      <button class="btn-primary" id="btn-copy-obsidian">📋 Copy Markdown</button>
+      <button class="btn-primary" id="btn-download-obsidian" style="background: var(--accent-green);">💾 Download .md</button>
+    </div>
+  </dialog>
+
+  <!-- Script Modules -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
