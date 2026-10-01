@@ -14,7 +14,7 @@ class PokeBattleApp {
   constructor() {
     this.engine = null;
     this.ai = new PokeAI(4);
-    this.gameMode = 'human-vs-ai'; // 'human-vs-ai', 'ai-vs-ai', 'human-vs-human'
+    this.gameMode = 'human-vs-ai'; // 'human-vs-ai', 'ai-vs-ai'
     this.isProcessing = false;
     this.aiSpectateTimer = null;
 
@@ -137,7 +137,7 @@ class PokeBattleApp {
     const team2Names = shuffled.slice(3, 6);
 
     const p1IsAi = this.gameMode === 'ai-vs-ai';
-    const p2IsAi = this.gameMode !== 'human-vs-human';
+    const p2IsAi = true;
 
     this.engine = new BattleEngine(team1Names, team2Names, p1IsAi, p2IsAi);
     this.isProcessing = false;
