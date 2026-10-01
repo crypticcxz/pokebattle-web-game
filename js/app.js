@@ -274,6 +274,7 @@ class PokeBattleApp {
   }
 
   async handlePlayerAction(p1Action) {
+    try {
     if (this.isProcessing || this.engine.isOver) return;
     this.isProcessing = true;
     this.setControlsDisabled(true);
@@ -286,6 +287,12 @@ class PokeBattleApp {
     this.updateInspectorView();
 
     await this.resolveTurn(p1Action, p2Action);
+    } catch (err) {
+      console.error("Turn error:", err);
+    } finally {
+      this.isProcessing = false;
+      this.updateUI();
+    }
   }
 
   async resolveTurn(action1, action2) {
@@ -394,7 +401,8 @@ class PokeBattleApp {
           await this.handleFaintReplacement(1 - pIdx);
         }
       } else if (act.type === 'switch') {
-        this.setDialogue(`Switched to ${act.newPokemon.name}!`);
+        const switchedName = (result && result.newPokemon) ? result.newPokemon.name : this.engine.getActive(pIdx).name;
+        this.setDialogue(`Switched to ${switchedName}!`);
         await this.delay(900);
       }
     }
